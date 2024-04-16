@@ -1,10 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require './course'
-require './parse'
-require './calendar'
-require './schedule'
+require_relative './course'
+require_relative './parse'
+require_relative './calendar'
+require_relative './schedule'
 
 FILENAME = './detailed-schedule.txt'
 
