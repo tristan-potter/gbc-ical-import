@@ -1,52 +1,42 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-require 'icalendar'
 require './course'
 require './parse'
+require './calendar'
+require './schedule'
 
-def calendar
-  Icalendar::Calendar.new
+FILENAME = './detailed-schedule.txt'
+
+def parse_schedule(filename)
+  Parse.new(filename:)
 end
 
-def create_ical_event
-  cal = calendar
-  cal.prodid = '-//Acme Widgets, Inc.//NONSGML ExportToCalendar//EN'
-  cal.version = '2.0'
+def with_calendar
+  calendar = Calendar.new
 
-  yield(cal.event)
+  yield(calendar)
 
-  cal.to_ical
+  calendar
 end
 
-def vcs
-  cal = calendar
-  cal.prodid = '-//Microsoft Corporation//Outlook MIMEDIR//EN'
-  cal.version = '1.0'
-
-  block.call(cal.event)
-
-  cal.to_ical
+# The current date and time in ISO 8601 format.
+def current_time
+  DateTime.now.strftime('%Y-%m-%dT%H:%M:%S%:z')
 end
 
-# Create a course
-course = Course.new(
-  start_at: Time.new(2021, 9, 1, 9, 0, 0),
-  end_at: Time.new(2021, 9, 1, 10, 0, 0),
-  title: 'Introduction to Foo',
-  professor: 'Dr. Foo',
-  location: 'Room 101',
-  time_zone: 'America/New_York'
-)
-
-# Create an ICS file for the course
-event = create_ical_event do |e|
-  e.dtstart     = Icalendar::Values::DateTime.new(course.start_at, tzid: course.time_zone)
-  e.dtend       = Icalendar::Values::DateTime.new(course.end_at, tzid: course.time_zone)
-  e.summary     = course.title
-  e.description = "Professor: #{course.professor}"
-  e.location    = course.location
-end
-
-parse = Parse.new(filename: './detailed-schedule.txt')
-puts parse.schedule_block[0].times
+with_calendar do |calendar|
+  parse_schedule(FILENAME).courses.each do |course|
+    course.schedules.each do |schedule|
+      schedule.occurances.each do |occur|
+        calendar.create_event(
+          dtstart: occur.dt_start,
+          dtend: occur.dt_end,
+          summary: course.summary,
+          description: course.description,
+          location: schedule.location
+        )
+      end
+    end
+  end
+end.write_ical_file("./dist/#{current_time}.ics")

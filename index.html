@@ -1,0 +1,19 @@
+<html>
+  <script src="https://cdn.jsdelivr.net/npm/@ruby/head-wasm-wasi@2.5.0/dist/browser.script.iife.js"></script>
+  <script type="text/ruby">
+    require "js"
+    document = JS.global[:document]
+    button = document.getElementById "draw"
+    result = document.getElementById "result"
+    button.addEventListener "click" do |e|
+      p e
+      luckiness = ["Lucky", "Unlucky"].sample
+      result[:innerText] = luckiness
+    end
+  </script>
+
+  <body>
+    <button id="draw">Draw Omikuji</button>
+    <div id="result"></div>
+  </body>
+</html>

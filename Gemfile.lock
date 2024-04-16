@@ -4,12 +4,14 @@ GEM
     icalendar (2.10.1)
       ice_cube (~> 0.16)
     ice_cube (0.16.4)
+    ruby_wasm (2.5.0-x86_64-darwin)
 
 PLATFORMS
   x86_64-darwin-21
 
 DEPENDENCIES
   icalendar (~> 2.10)
+  ruby_wasm (~> 2.5)
 
 BUNDLED WITH
    2.3.26
