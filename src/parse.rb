@@ -3,12 +3,16 @@
 class Parse
   attr_reader :data, :courses
 
-  def initialize(filename:)
-    @data = parse_data(filename)
-    @courses = Course.many_from_str(@data)
+  def self.parse_data(filename)
+    File.read(filename)
   end
 
-  def parse_data(filename)
-    File.read(filename)
+  def self.from_file(filename)
+    new(data: parse_data(filename))
+  end
+
+  def initialize(data:)
+    @data = data
+    @courses = Course.many_from_str(@data)
   end
 end

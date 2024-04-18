@@ -1,0 +1,151 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'optparse'
+require_relative '../src/main'
+
+class Cli
+  VERSION = '0.0.1'
+
+  class Color
+    class << self
+      def colorize(color_code, text)
+        "\e[#{color_code}m#{text}\e[0m"
+      end
+
+      def red(text)
+        colorize(31, text)
+      end
+
+      def green(text)
+        colorize(32, text)
+      end
+
+      def yellow(text)
+        colorize(33, text)
+      end
+    end
+  end
+
+  class CliOptions
+    attr_accessor :input, :output, :verbose
+    attr_reader :parser
+
+    def initialize
+      self.verbose = false
+      self.input = nil
+      self.output = nil
+
+      @parser = OptionParser.new do |parser|
+        define_options(parser)
+      end
+    end
+
+    def define_options(parser)
+      parser.program_name = 'GBC Calendar Importer'
+      parser.version = VERSION
+
+      parser.banner = <<~BANNER
+        #{Color.green(parser.program_name)} #{parser.version}
+
+        #{Color.yellow('USAGE:')}
+        gbc-calendar [options]
+      BANNER
+      parser.separator('')
+      parser.separator(Color.yellow('OPTIONS:'))
+
+      input_from_file_option(parser)
+      output_to_file_option(parser)
+      boolean_verbose_option(parser)
+
+      parser.on('-h', '--help', 'Show this message') do
+        puts parser
+        exit
+      end
+
+      parser.on('--version', 'Show version') do
+        puts VERSION
+        exit
+      end
+    end
+
+    def output_to_file_option(parser)
+      parser.on('-o FILENAME', '--output FILENAME', 'The file to send output to') do |filename|
+        self.output = filename
+      end
+    end
+
+    def boolean_verbose_option(parser)
+      parser.on('-v', '--verbose', 'Show extra information') do
+        self.verbose = true
+      end
+    end
+
+    def input_from_file_option(parser)
+      parser.on('-i FILENAME', '--input FILENAME', 'The file to parse') do |filename|
+        self.input = filename
+      end
+    end
+
+    def parse(args)
+      parser.parse!(args)
+    end
+
+    def to_s
+      "input: #{input}, output: #{output}, verbose: #{verbose}"
+    end
+  end
+
+  attr_reader :options
+
+  #
+  # Return a structure describing the options.
+  #
+  def parse(args)
+    @options = CliOptions.new
+    @options.parse(args)
+    @options
+  end
+
+  def read(filename)
+    log "Reading file #{filename}"
+    File.read(filename)
+  end
+
+  def write_ical_file(filename, text)
+    File.write(filename, text)
+  end
+
+  def log(message = nil)
+    return unless @options.verbose
+
+    pp message
+  end
+
+  def run!
+    log "Running with options: \n\t#{options}"
+
+    if options.input.nil?
+      log 'No input file specified. Exiting.'
+      exit
+    end
+
+    input = read(options.input)
+
+    log "Generating calendar from #{input}"
+    cal_string = GbcCalendarImporter.new(input).as_calendar
+
+    if options.output
+      log 'Outputing to file'
+      write_ical_file(options.output, cal_string)
+    else
+      log 'Outputing to console'
+      puts cal_string
+    end
+  end
+end
+
+cli = Cli.new
+options = cli.parse(ARGV)
+
+cli.run!

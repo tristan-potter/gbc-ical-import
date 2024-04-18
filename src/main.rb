@@ -8,35 +8,53 @@ require_relative './schedule'
 
 FILENAME = './detailed-schedule.txt'
 
-def parse_schedule(filename)
-  Parse.new(filename:)
-end
+class GbcCalendarImporter
+  class Event
+    attr_reader :dt_start, :dt_end, :summary, :description, :location
 
-def with_calendar
-  calendar = Calendar.new
-
-  yield(calendar)
-
-  calendar
-end
-
-# The current date and time in ISO 8601 format.
-def current_time
-  DateTime.now.strftime('%Y-%m-%dT%H:%M:%S%:z')
-end
-
-with_calendar do |calendar|
-  parse_schedule(FILENAME).courses.each do |course|
-    course.schedules.each do |schedule|
-      schedule.occurances.each do |occur|
-        calendar.create_event(
-          dtstart: occur.dt_start,
-          dtend: occur.dt_end,
-          summary: course.summary,
-          description: course.description,
-          location: schedule.location
-        )
-      end
+    def initialize(course, schedule, occurance)
+      @dt_start = occurance.dt_start
+      @dt_end = occurance.dt_end
+      @summary = course.summary
+      @description = course.description
+      @location = schedule.location
     end
   end
-end.write_ical_file("./dist/#{current_time}.ics")
+
+  def initialize(data)
+    @data = data
+    @parser = Parse.new(data: @data)
+    @events = collect_events(@parser.courses)
+  end
+
+  def as_calendar
+    Calendar.with do |calendar|
+      @events.each do |event|
+        calendar.create_event(
+          dtstart: event.dt_start,
+          dtend: event.dt_end,
+          summary: event.summary,
+          description: event.description,
+          location: event.location
+        )
+      end
+    end.to_ical
+  end
+
+  private
+
+  def collect_events(courses)
+    courses.map do |course|
+      course.schedules.map do |schedule|
+        schedule.occurances.map do |occur|
+          Event.new(course, schedule, occur)
+        end
+      end
+    end.flatten
+  end
+
+  # The current date and time in ISO 8601 format.
+  def current_time
+    DateTime.now.strftime('%Y-%m-%dT%H:%M:%S%:z')
+  end
+end

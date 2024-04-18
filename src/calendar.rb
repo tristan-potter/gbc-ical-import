@@ -6,17 +6,16 @@ require 'icalendar'
 class Calendar
   attr_reader :tzid
 
-  def initialize(type: :icalendar, timezone: :eastern)
-    @calendar = Icalendar::Calendar.new
+  def self.with(*args, **kwargs)
+    c = new(*args, **kwargs)
+    yield(c)
+    c
+  end
 
-    case type
-    when :icalendar
-      add_icalendar
-    when :outlook
-      add_outlook
-    else
-      raise ArgumentError, 'Invalid calendar type'
-    end
+  def initialize(timezone: :eastern)
+    @calendar = Icalendar::Calendar.new
+    @calendar.prodid = '-//Tristan Potter//NONSGML ExportToCalendar//EN'
+    @calendar.version = '2.0'
 
     case timezone
     when :eastern
@@ -52,16 +51,6 @@ class Calendar
     eastern_time_id
   end
 
-  def add_icalendar
-    @calendar.prodid = '-//Acme Widgets, Inc.//NONSGML ExportToCalendar//EN'
-    @calendar.version = '2.0'
-  end
-
-  def add_outlook
-    @calendar.prodid = '-//Microsoft Corporation//Outlook MIMEDIR//EN'
-    @calendar.version = '1.0'
-  end
-
   def create_event(dtstart:, dtend:, summary:, description:, location:)
     @calendar.event do |event|
       event.dtstart = wrapped_datetime(dtstart)
@@ -74,6 +63,10 @@ class Calendar
 
   def write_ical_file(filename)
     File.write(filename, @calendar.to_ical)
+  end
+
+  def to_ical
+    @calendar.to_ical
   end
 
   private
