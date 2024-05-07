@@ -11,6 +11,9 @@
 /tmp/
 /dist/
 
+# application artifacts
+schedules/
+
 # Used by dotenv library to load environment variables.
 # .env
 
